@@ -1,0 +1,115 @@
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
+
+namespace WinFormsApp3
+{
+    public partial class Form1 : Form
+    {
+
+        public Form1()
+        {
+            InitializeComponent();
+            circles = new List<Circle>();
+            timer1.Interval = 30; // Интервал таймера
+            timer1.Start();
+            random = new Random();
+        }
+        private Random random;
+        public class Circle
+        {
+            public float X { get; set; }
+            public float Y { get; set; }
+            public float Radius { get; set; }
+            public bool IsGrowing { get; set; } = true;
+            public Color Color { get; set; }
+        }
+        private List<Circle> circles;
+        private int clickAmount = 0;
+        public int speed;
+        Graphics g;
+        private void pictureBox1_Paint(object sender, PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            foreach (var circle in circles)
+            {
+                using Brush brush = new SolidBrush(circle.Color);
+                g.FillEllipse(
+                    brush, circle.X - circle.Radius / 2, circle.Y - circle.Radius / 2, circle.Radius, circle.Radius);
+            }
+        }
+
+        private void pictureBox1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            bool needsRepaint = false;
+
+            foreach (var circle in circles)
+            {
+                if (!circle.IsGrowing) continue;
+
+                foreach (var otherCircle in circles.Where(c => c != circle))
+                {
+                    float distance = GetDistance(circle.X, circle.Y, otherCircle.X, otherCircle.Y);
+                    if (distance <= circle.Radius + otherCircle.Radius)
+                    {
+                        circle.IsGrowing = false;
+                        break;
+                    }
+                }
+
+                if (circle.X - circle.Radius <= 0 ||
+                    circle.Y - circle.Radius <= 0 ||
+                    circle.X + circle.Radius >= pictureBox1.Width ||
+                    circle.Y + circle.Radius >= pictureBox1.Height)
+                {
+                    circle.IsGrowing = false;
+                }
+
+                if (circle.IsGrowing)
+                {
+                    circle.Radius += speed;
+                    needsRepaint = true;
+                }
+            }
+
+            if (needsRepaint)
+                pictureBox1.Invalidate();
+
+        }
+        private float GetDistance(float x1, float y1, float x2, float y2)
+        {
+            return (float)System.Math.Sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+        }
+        private void pictureBox1_MouseClick(object sender, MouseEventArgs e)
+        {
+            clickAmount++;
+            label2.Text = clickAmount.ToString();
+            circles.Add(new Circle
+            {
+                X = e.Location.X,
+                Y = e.Location.Y,
+                Radius = 10,
+                Color = GetRandomColor()
+            });
+            pictureBox1.Invalidate();
+            label2.Update();
+        }
+        private Color GetRandomColor()
+        {
+            return Color.FromArgb(random.Next(256), random.Next(256), random.Next(256));
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+
+            int.TryParse(textBox1.Text, out speed);
+        }
+    }
+}
